@@ -27,7 +27,7 @@ ATTR_LAST_UPDATED: Final = "last_forecast_update"
 ATTR_SOURCE_ENTITY: Final = "source_entity"
 ATTR_HISTORY_DAYS: Final = "history_days"
 
-CONF_FORECAST_ENTITY: Final = "forecast_entity"
+CONF_FORECAST_ENTITIES: Final = "forecast_entities"
 CONF_REFERENCE_ENTITY: Final = "reference_entity"
 FORECAST_TYPE_HORIZON_BIAS: Final = "horizon_bias"
 DEFAULT_BIAS_HISTORY_DAYS: Final = 21

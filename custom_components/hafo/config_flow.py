@@ -8,7 +8,7 @@ from homeassistant.helpers import selector
 import voluptuous as vol
 
 from .const import (
-    CONF_FORECAST_ENTITY,
+    CONF_FORECAST_ENTITIES,
     CONF_FORECAST_TYPE,
     CONF_HISTORY_DAYS,
     CONF_MIN_DAYS_PER_BUCKET,
@@ -60,19 +60,22 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
                 else:
                     unique_key = source_entity
             else:
-                # Horizon Bias: needs both the forecast entity to correct and
-                # the actual-production entity to learn the correction from.
-                forecast_entity = user_input.get(CONF_FORECAST_ENTITY)
+                # Horizon Bias: needs the forecast entities to correct (one
+                # orientation's day-based entities) and the actual-production
+                # entity to learn the correction from.
+                forecast_entities = user_input.get(CONF_FORECAST_ENTITIES) or []
                 reference_entity = user_input.get(CONF_REFERENCE_ENTITY)
-                if not forecast_entity:
-                    errors[CONF_FORECAST_ENTITY] = "required"
-                elif self.hass.states.get(forecast_entity) is None:
-                    errors[CONF_FORECAST_ENTITY] = "entity_not_found"
+                if not forecast_entities:
+                    errors[CONF_FORECAST_ENTITIES] = "required"
+                else:
+                    missing = [e for e in forecast_entities if self.hass.states.get(e) is None]
+                    if missing:
+                        errors[CONF_FORECAST_ENTITIES] = "entity_not_found"
                 if not reference_entity:
                     errors[CONF_REFERENCE_ENTITY] = "required"
                 elif self.hass.states.get(reference_entity) is None:
                     errors[CONF_REFERENCE_ENTITY] = "entity_not_found"
-                unique_key = f"{forecast_entity}_{reference_entity}"
+                unique_key = f"{'_'.join(forecast_entities)}_{reference_entity}"
 
             if not errors:
                 # Create unique ID from the relevant entity/entities
@@ -80,7 +83,10 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
 
                 # Create a friendly title from the primary entity
-                title_entity = user_input.get(CONF_SOURCE_ENTITY) or user_input.get(CONF_FORECAST_ENTITY)
+                title_entity = user_input.get(CONF_SOURCE_ENTITY)
+                if not title_entity:
+                    forecast_entities_for_title = user_input.get(CONF_FORECAST_ENTITIES) or []
+                    title_entity = forecast_entities_for_title[0] if forecast_entities_for_title else None
                 state = self.hass.states.get(title_entity) if title_entity else None
                 title = state.attributes.get("friendly_name", title_entity) if state else title_entity
 
@@ -122,8 +128,8 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Optional(CONF_SOURCE_ENTITY): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain=["sensor", "input_number"])
                 ),
-                vol.Optional(CONF_FORECAST_ENTITY): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="sensor", device_class="power")
+                vol.Optional(CONF_FORECAST_ENTITIES): selector.EntitySelector(
+                    selector.EntitySelectorConfig(domain="sensor", device_class="power", multiple=True)
                 ),
                 vol.Optional(CONF_REFERENCE_ENTITY): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="sensor", device_class="power")
@@ -162,8 +168,10 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "hint": (
                     "Historical Shift/Averaged: fill in 'Source entity' only. "
-                    "Horizon Bias: fill in 'Forecast entity' (the forecast to correct) "
-                    "and 'Reference entity' (actual measured production), leave 'Source entity' empty."
+                    "Horizon Bias: fill in 'Forecast entities' (the today/tomorrow/day-after "
+                    "entities for ONE roof orientation) and 'Reference entity' (actual measured "
+                    "production for that same orientation), leave 'Source entity' empty. "
+                    "For multiple orientations, create one entry per orientation."
                 )
             },
         )
