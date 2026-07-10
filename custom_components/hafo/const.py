@@ -15,6 +15,7 @@ CONF_SOURCE_DEVICE_CLASS: Final = "source_device_class"
 
 # Forecast types
 FORECAST_TYPE_HISTORICAL_SHIFT: Final = "historical_shift"
+FORECAST_TYPE_HISTORICAL_AVERAGED = "historical_averaged"
 
 # Default values
 DEFAULT_HISTORY_DAYS: Final = 7

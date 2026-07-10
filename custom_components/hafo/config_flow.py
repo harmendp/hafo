@@ -14,6 +14,7 @@ from .const import (
     DEFAULT_FORECAST_TYPE,
     DEFAULT_HISTORY_DAYS,
     DOMAIN,
+    FORECAST_TYPE_HISTORICAL_AVERAGED,
     FORECAST_TYPE_HISTORICAL_SHIFT,
 )
 
@@ -82,7 +83,11 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
                         options=[
                             selector.SelectOptionDict(
                                 value=FORECAST_TYPE_HISTORICAL_SHIFT,
-                                label="Historical Shift",
+                                label="Historical Shift (single day)",
+                            ),
+                            selector.SelectOptionDict(
+                                value=FORECAST_TYPE_HISTORICAL_AVERAGED,
+                                label="Historical Averaged (weekday pattern)",
                             ),
                         ],
                         mode=selector.SelectSelectorMode.DROPDOWN,
