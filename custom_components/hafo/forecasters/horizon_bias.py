@@ -16,9 +16,9 @@ Why this can't just reuse recorder statistics (like HistoricalAveragedForecaster
 does for its source entity):
 - Recorder statistics track an entity's *state* over time, not its
   attributes. Day-based solar forecast entities typically expose the
-  interesting data (a sub-daily forecast curve) via the `forecast`
-  attribute, while the state itself is something like a running daily
-  total — not a value comparable to a specific 15-min slot.
+  interesting data (a sub-daily forecast curve) via an attribute, while the
+  state itself is something like a running daily total — not a value
+  comparable to a specific 15-min slot.
 - So there is no way to look up "what did this entity predict for
   10:15 last Tuesday" from the recorder after the fact; once a day rolls
   over, the "today" entity's forecast attribute is overwritten with new
@@ -109,14 +109,41 @@ class ForecastResult:
     generated_at: datetime
 
 
+# Attribute name used by the open-meteo-style solar forecast entities:
+# a dict mapping ISO-timestamp strings directly to a wattage value, e.g.
+# {"2026-07-11T06:00:00+02:00": 166, ...}. Different shape than HAFO's own
+# `forecast` attribute (a list of {"time": ..., "value": ...} dicts), which
+# is kept as a fallback in case forecast_entities points at another HAFO
+# entity instead.
+ATTR_WATTS = "watts"
+
+
 def get_forecast_points(hass: HomeAssistant, entity_id: str) -> list[ForecastPoint]:
-    """Read the current `forecast` attribute points from a forecast entity."""
+    """Read forecast points from a forecast entity.
+
+    Supports two shapes:
+    - `watts` attribute: dict of {ISO-timestamp: watt_value}.
+    - `forecast` attribute (HAFO convention): list of {"time": ..., "value": ...}.
+    """
     state = hass.states.get(entity_id)
     if state is None:
         return []
 
+    watts = state.attributes.get(ATTR_WATTS)
+    if isinstance(watts, dict):
+        points: list[ForecastPoint] = []
+        for time_str, value in watts.items():
+            time = dt_util.parse_datetime(time_str)
+            if time is None:
+                continue
+            try:
+                points.append(ForecastPoint(time=time, value=float(value)))
+            except (TypeError, ValueError):
+                continue
+        return points
+
     raw_points = state.attributes.get(ATTR_FORECAST, [])
-    points: list[ForecastPoint] = []
+    points = []
     for raw in raw_points:
         try:
             time = dt_util.parse_datetime(raw["time"])
