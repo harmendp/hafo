@@ -8,6 +8,7 @@ DOMAIN: Final = "hafo"
 CONF_SOURCE_ENTITY: Final = "source_entity"
 CONF_HISTORY_DAYS: Final = "history_days"
 CONF_FORECAST_TYPE: Final = "forecast_type"
+CONF_CUSTOM_NAME = "custom_name"
 
 # Source entity attributes (persisted to survive restarts)
 CONF_SOURCE_UNIT: Final = "source_unit_of_measurement"
