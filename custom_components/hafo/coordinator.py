@@ -7,15 +7,22 @@ coordinator based on the forecast type configured in the entry.
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_FORECAST_TYPE, FORECAST_TYPE_HISTORICAL_AVERAGED, FORECAST_TYPE_HISTORICAL_SHIFT
+from .const import (
+    CONF_FORECAST_TYPE,
+    FORECAST_TYPE_HISTORICAL_AVERAGED,
+    FORECAST_TYPE_HISTORICAL_SHIFT,
+    FORECAST_TYPE_HORIZON_BIAS,
+)
 from .forecasters.historical_shift import ForecastResult, HistoricalShiftForecaster
 from .forecasters.historical_averaged import HistoricalAveragedForecaster
+from .forecasters.horizon_bias import HorizonBiasForecaster
 
-type ForecasterCoordinator = HistoricalShiftForecaster | HistoricalAveragedForecaster
+type ForecasterCoordinator = HistoricalShiftForecaster | HistoricalAveragedForecaster | HorizonBiasForecaster
 
 FORECASTER_TYPES: dict[str, type[ForecasterCoordinator]] = {
     FORECAST_TYPE_HISTORICAL_SHIFT: HistoricalShiftForecaster,
     FORECAST_TYPE_HISTORICAL_AVERAGED: HistoricalAveragedForecaster,
+    FORECAST_TYPE_HORIZON_BIAS: HorizonBiasForecaster,
 }
 
 def create_forecaster(hass: HomeAssistant, entry: ConfigEntry) -> ForecasterCoordinator:
