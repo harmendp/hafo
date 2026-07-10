@@ -367,8 +367,17 @@ class HorizonBiasForecaster(DataUpdateCoordinator[ForecastResult | None]):
 
     @property
     def source_entity(self) -> str:
-        """Return the first forecast entity (used by sensor.py for unit/device_class)."""
-        return self._forecast_entities[0]
+        """Return the reference entity for unit/device_class inheritance.
+
+        Deliberately NOT a forecast_entities[0]: those "today/tomorrow"
+        entities typically have a kWh daily-total as their state (with the
+        actual sub-daily W values tucked away in the `watts` attribute), so
+        inheriting unit/device_class from them would tag this sensor's W
+        forecast values as kWh/energy. reference_entity is the real
+        instantaneous power sensor, so its unit (W) and device_class
+        (power) are what the corrected output actually represents.
+        """
+        return self._reference_entity
 
     @property
     def forecast_entities(self) -> list[str]:
