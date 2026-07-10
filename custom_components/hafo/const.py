@@ -26,3 +26,14 @@ ATTR_FORECAST: Final = "forecast"
 ATTR_LAST_UPDATED: Final = "last_forecast_update"
 ATTR_SOURCE_ENTITY: Final = "source_entity"
 ATTR_HISTORY_DAYS: Final = "history_days"
+
+CONF_FORECAST_ENTITY: Final = "forecast_entity"
+CONF_REFERENCE_ENTITY: Final = "reference_entity"
+FORECAST_TYPE_HORIZON_BIAS: Final = "horizon_bias"
+DEFAULT_BIAS_HISTORY_DAYS: Final = 21
+
+# Horizon bias: minimum number of distinct days required in a quarter-of-day
+# bucket before the learned correction factor is applied (see horizon_bias.py
+# for why this counts days, not raw 5-min samples).
+CONF_MIN_DAYS_PER_BUCKET: Final = "min_days_per_bucket"
+DEFAULT_MIN_DAYS_PER_BUCKET: Final = 5
