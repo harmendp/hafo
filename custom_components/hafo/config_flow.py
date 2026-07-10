@@ -8,6 +8,7 @@ from homeassistant.helpers import selector
 import voluptuous as vol
 
 from .const import (
+    CONF_CUSTOM_NAME,
     CONF_FORECAST_ENTITIES,
     CONF_FORECAST_TYPE,
     CONF_HISTORY_DAYS,
@@ -82,13 +83,19 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(f"{DOMAIN}_{unique_key}")
                 self._abort_if_unique_id_configured()
 
-                # Create a friendly title from the primary entity
-                title_entity = user_input.get(CONF_SOURCE_ENTITY)
-                if not title_entity:
-                    forecast_entities_for_title = user_input.get(CONF_FORECAST_ENTITIES) or []
-                    title_entity = forecast_entities_for_title[0] if forecast_entities_for_title else None
-                state = self.hass.states.get(title_entity) if title_entity else None
-                title = state.attributes.get("friendly_name", title_entity) if state else title_entity
+                custom_name = (user_input.get(CONF_CUSTOM_NAME) or "").strip()
+                if custom_name:
+                    title = custom_name
+                elif forecast_type in _SOURCE_ENTITY_TYPES:
+                    title_entity = user_input.get(CONF_SOURCE_ENTITY)
+                    state = self.hass.states.get(title_entity) if title_entity else None
+                    title = state.attributes.get("friendly_name", title_entity) if state else title_entity
+                else:
+                    # Horizon Bias: reference_entity usually has a shorter,
+                    # cleaner name than the verbose day-based forecast entities.
+                    title_entity = user_input.get(CONF_REFERENCE_ENTITY)
+                    state = self.hass.states.get(title_entity) if title_entity else None
+                    title = state.attributes.get("friendly_name", title_entity) if state else title_entity
 
                 return self.async_create_entry(
                     title=title,
@@ -103,6 +110,7 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
 
         schema = vol.Schema(
             {
+                vol.Optional(CONF_CUSTOM_NAME): selector.TextSelector(),
                 vol.Optional(
                     CONF_FORECAST_TYPE,
                     default=DEFAULT_FORECAST_TYPE,
@@ -129,10 +137,10 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
                     selector.EntitySelectorConfig(domain=["sensor", "input_number"])
                 ),
                 vol.Optional(CONF_FORECAST_ENTITIES): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="sensor", device_class="energy", multiple=True)
+                    selector.EntitySelectorConfig(domain="sensor", multiple=True)
                 ),
                 vol.Optional(CONF_REFERENCE_ENTITY): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="sensor", device_class="power")
+                    selector.EntitySelectorConfig(domain="sensor")
                 ),
                 vol.Optional(
                     CONF_MIN_DAYS_PER_BUCKET,
@@ -167,6 +175,7 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders={
                 "hint": (
+                    "'Custom name' is optional and overrides the auto-generated title. "
                     "Historical Shift/Averaged: fill in 'Source entity' only. "
                     "Horizon Bias: fill in 'Forecast entities' (the today/tomorrow/day-after "
                     "entities for ONE roof orientation) and 'Reference entity' (actual measured "
