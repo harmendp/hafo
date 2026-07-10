@@ -129,7 +129,7 @@ class HafoConfigFlow(ConfigFlow, domain=DOMAIN):
                     selector.EntitySelectorConfig(domain=["sensor", "input_number"])
                 ),
                 vol.Optional(CONF_FORECAST_ENTITIES): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="sensor", device_class="power", multiple=True)
+                    selector.EntitySelectorConfig(domain="sensor", device_class="energy", multiple=True)
                 ),
                 vol.Optional(CONF_REFERENCE_ENTITY): selector.EntitySelector(
                     selector.EntitySelectorConfig(domain="sensor", device_class="power")
