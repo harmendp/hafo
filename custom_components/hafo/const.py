@@ -37,3 +37,12 @@ DEFAULT_BIAS_HISTORY_DAYS: Final = 21
 # for why this counts days, not raw 5-min samples).
 CONF_MIN_DAYS_PER_BUCKET: Final = "min_days_per_bucket"
 DEFAULT_MIN_DAYS_PER_BUCKET: Final = 5
+
+# Optional manual override for the entry title / entity name. If left empty,
+# the title is auto-derived from the relevant entity's friendly name.
+CONF_CUSTOM_NAME: Final = "custom_name"
+
+# Horizon bias: attributes exposing the learned correction factors, so they
+# can be inspected without digging through debug logs.
+ATTR_BIAS_TABLE: Final = "bias_table"
+ATTR_CURRENT_BIAS_FACTOR: Final = "current_bias_factor"

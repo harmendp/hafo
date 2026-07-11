@@ -11,6 +11,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    ATTR_BIAS_TABLE,
+    ATTR_CURRENT_BIAS_FACTOR,
     ATTR_FORECAST,
     ATTR_HISTORY_DAYS,
     ATTR_LAST_UPDATED,
@@ -140,6 +142,17 @@ class HafoForecastSensor(CoordinatorEntity[ForecasterCoordinator], SensorEntity)
         if result is not None:
             attrs[ATTR_LAST_UPDATED] = result.generated_at.isoformat()
             attrs[ATTR_FORECAST] = self._format_forecast(result)
+
+        bias_table = getattr(self.coordinator, "bias_table", None)
+        if bias_table:
+            # Slot 0-95 -> "HH:MM" for readability.
+            attrs[ATTR_BIAS_TABLE] = {
+                f"{slot // 4:02d}:{(slot % 4) * 15:02d}": round(factor, 3)
+                for slot, factor in sorted(bias_table.items())
+            }
+            now = dt_util.now()
+            current_slot = now.hour * 4 + now.minute // 15
+            attrs[ATTR_CURRENT_BIAS_FACTOR] = round(bias_table.get(current_slot, 1.0), 3)
 
         return attrs
 
