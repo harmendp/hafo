@@ -16,9 +16,9 @@ Why this can't just reuse recorder statistics (like HistoricalAveragedForecaster
 does for its source entity):
 - Recorder statistics track an entity's *state* over time, not its
   attributes. Day-based solar forecast entities typically expose the
-  interesting data (a sub-daily forecast curve) via an attribute, while the
-  state itself is something like a running daily total — not a value
-  comparable to a specific 15-min slot.
+  interesting data (a sub-daily forecast curve) via the `forecast`
+  attribute, while the state itself is something like a running daily
+  total — not a value comparable to a specific 15-min slot.
 - So there is no way to look up "what did this entity predict for
   10:15 last Tuesday" from the recorder after the fact; once a day rolls
   over, the "today" entity's forecast attribute is overwritten with new
@@ -356,6 +356,7 @@ class HorizonBiasForecaster(DataUpdateCoordinator[ForecastResult | None]):
         )
         self._archive: dict[str, dict[str, float | None]] = {}
         self._archive_loaded = False
+        self._bias_table: dict[int, float] = {}
 
         super().__init__(
             hass,
@@ -393,6 +394,15 @@ class HorizonBiasForecaster(DataUpdateCoordinator[ForecastResult | None]):
     def min_days_per_bucket(self) -> int:
         """Return the minimum distinct days required per quarter-of-day bucket."""
         return self._min_days_per_bucket
+
+    @property
+    def bias_table(self) -> dict[int, float]:
+        """Return the most recently computed per-quarter-of-day correction factors.
+
+        Keys are quarter-of-day slots (0-95). Slots not present here had too
+        little history and are implicitly treated as factor 1.0 (no correction).
+        """
+        return self._bias_table
 
     @property
     def entry(self) -> ConfigEntry:
@@ -472,6 +482,7 @@ class HorizonBiasForecaster(DataUpdateCoordinator[ForecastResult | None]):
         await self._store.async_save(self._archive)
 
         bias_table = build_bias_table(self._archive, now, self._min_days_per_bucket)
+        self._bias_table = bias_table
 
         future_points = [p for p in combined_points if p.time >= now]
         corrected = apply_bias(future_points, bias_table, now)
